@@ -1,0 +1,206 @@
+openapi: "3.1.0"
+info:
+  title: "Nace.AI API"
+  description: "Nace.AI API"
+  version: "1.0.0"
+servers:
+  - url: "https://api.nace.ai"
+paths:
+  /v1/{team_id}/verify:
+    post:
+      description: ""
+      parameters:
+        - name: "team_id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyRequest"
+        required: true
+      responses:
+        "400":
+          description: "Bad Request"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/NaceAPIError"
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/VerifyResponse"
+components:
+  schemas:
+    NaceApiErrorDetails:
+      type: "object"
+      properties:
+        code:
+          type: "string"
+        message:
+          type: "string"
+        param:
+          type: "string"
+        type:
+          type: "string"
+    NaceAPIError:
+      type: "object"
+      properties:
+        detail:
+          $ref: "#/components/schemas/NaceApiErrorDetails"
+    ChatMessage:
+      type: "object"
+      properties:
+        role:
+          type: "string"
+        content:
+          type: "string"
+      required:
+        - "role"
+        - "content"
+    JsonObject:
+      type: "object"
+      properties: { }
+    LLamaGuardType:
+      type: "string"
+      enum:
+        - "S1"
+        - "S2"
+        - "S3"
+        - "S4"
+        - "S5"
+        - "S6"
+        - "S7"
+        - "S8"
+        - "S9"
+        - "S10"
+        - "S11"
+        - "S12"
+        - "S13"
+        - "S14"
+    LlamaGuardParameters:
+      type: "object"
+      properties:
+        guards:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/LLamaGuardType"
+      required:
+        - "guards"
+    NacePolicyVerifierParameters:
+        type: "object"
+        properties:
+          id:
+            type: "string"
+          threshold:
+            type: "number"
+            minimum: 0.0
+            maximum: 1.0
+        required:
+          - "id"
+    VerifierParameters:
+      type: "object"
+      properties:
+        type:
+          type: "string"
+          enum:
+            - "llama_guard_verifier"
+            - "nace_policy_verifier"
+        nace_policy_verifier:
+          $ref: "#/components/schemas/NacePolicyVerifierParameters"
+        llama_guard_verifier:
+          $ref: "#/components/schemas/LlamaGuardParameters"
+      required:
+        - "id"
+        - "type"
+    VerifyRequest:
+      type: "object"
+      properties:
+        messages:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+        verifiers:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/VerifierParameters"
+        explain:
+          type: "boolean"
+      required:
+        - "messages"
+        - "verifiers"
+    VerifiersResultExplanation:
+      type: "object"
+      properties:
+        text:
+          type: "string"
+    Usage:
+      type: "object"
+      properties:
+        prompt_tokens:
+          type: "integer"
+          format: "int32"
+        completion_tokens:
+          type: "integer"
+          format: "int32"
+        total_tokens:
+          type: "integer"
+          format: "int32"
+    ResultAction:
+      type: "string"
+      enum:
+          - "allow"
+          - "modify"
+          - "deny"
+    VerifierResult:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        result:
+          type: "string"
+        explanation:
+          $ref: "#/components/schemas/VerifiersResultExplanation"
+        action:
+          $ref: "#/components/schemas/ResultAction"
+        details:
+          $ref: "#/components/schemas/JsonObject"
+        usage:
+          $ref: "#/components/schemas/Usage"
+      required:
+        - "id"
+        - "result"
+        - "action"
+    VerifiersExecutionResult:
+      type: "object"
+      properties:
+        verifiers:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/VerifierResult"
+        action:
+          $ref: "#/components/schemas/ResultAction"
+      required:
+        - "verifiers"
+        - "action"
+    VerifyResponse:
+      type: "object"
+      properties:
+        request_id:
+          type: "string"
+          format: "uuid"
+        action:
+          type: "string"
+          $ref: "#/components/schemas/ResultAction"
+        execution_result:
+          $ref: "#/components/schemas/VerifiersExecutionResult"
+        result_explanation:
+          $ref: "#/components/schemas/VerifiersResultExplanation"
+      required:
+        - "action"
+        - "request_id"
+        - "execution_result"
